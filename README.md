@@ -162,3 +162,7 @@ Resolving differs from execution, that it not need execution path to be provided
 * Right click on NodesControl to bring context menu with nodes available to put
 * Click on node to select it, shift-click to multi select
 * Ctrl+LMB on connection socket to unpin it and drag elsewhere
+
+### Credits & Contact
+
+Programming: Mariusz Komorowski - [@komorra86](https://twitter.com/komorra86)
