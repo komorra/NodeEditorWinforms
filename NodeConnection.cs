@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace NodeEditor
-{
+{    
     internal class NodeConnection
     {
         public NodeVisual OutputNode { get; set; }

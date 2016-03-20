@@ -12,10 +12,13 @@ using System.Windows.Forms;
 
 namespace NodeEditor
 {
+    /// <summary>
+    /// Main control of Node Editor Winforms
+    /// </summary>
     [ToolboxBitmap(typeof(NodesControl), "nodeed")]
     public partial class NodesControl : UserControl
     {
-        public class NodeToken
+        internal class NodeToken
         {
             public MethodInfo Method;
             public NodeAttribute Attribute;
@@ -31,10 +34,26 @@ namespace NodeEditor
         private PointF dragConnectionBegin;
         private PointF dragConnectionEnd;
 
+        /// <summary>
+        /// Context of the editor. You should set here an instance that implements INodesContext interface.
+        /// In context you should define your nodes (methods decorated by Node attribute).
+        /// </summary>
         public INodesContext Context { get; set; }
 
+        /// <summary>
+        /// Occurs when user selects a node. In the object will be passed node settings for unplugged inputs/outputs.
+        /// </summary>
         public event Action<object> OnNodeContextSelected = delegate { };
+
+        /// <summary>
+        /// Occurs when node would to share its description.
+        /// </summary>
         public event Action<string> OnNodeHint = delegate { };
+
+        /// <summary>
+        /// Indicates which part of control should be actually visible. It is useful when dragging nodes out of autoscroll parent control,
+        /// to guarantee that moving node/connection is visible to user.
+        /// </summary>
         public event Action<RectangleF> OnShowLocation = delegate { };
 
         private readonly Dictionary<ToolStripMenuItem,int> allContextItems = new Dictionary<ToolStripMenuItem, int>();
@@ -43,6 +62,9 @@ namespace NodeEditor
         private PointF selectionStart;
         private PointF selectionEnd;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public NodesControl()
         {
             InitializeComponent();
@@ -501,6 +523,10 @@ namespace NodeEditor
             Invalidate();
         }
 
+        /// <summary>
+        /// Executes whole node graph (when called parameterless) or given node when specified.
+        /// </summary>
+        /// <param name="node"></param>
         public void Execute(NodeVisual node = null)
         {
             var init = node ?? graph.Nodes.FirstOrDefault(x => x.ExecInit);
@@ -517,6 +543,10 @@ namespace NodeEditor
             }
         }
 
+        /// <summary>
+        /// Resolves given node, resolving it all dependencies recursively.
+        /// </summary>
+        /// <param name="node"></param>
         private void Resolve(NodeVisual node)
         {
             var icontext = (node.GetNodeContext() as DynamicNodeContext);
@@ -537,6 +567,9 @@ namespace NodeEditor
             }
         }
 
+        /// <summary>
+        /// Serializes current node graph to binary data.
+        /// </summary>        
         public byte[] Serialize()
         {
             using (var bw = new BinaryWriter(new MemoryStream()))
@@ -562,7 +595,7 @@ namespace NodeEditor
                 return (bw.BaseStream as MemoryStream).ToArray();
             }
         }
-
+        
         private static void SerializeNode(BinaryWriter bw, NodeVisual node)
         {
             bw.Write(node.GUID);
@@ -590,6 +623,10 @@ namespace NodeEditor
             bw.Write(node.Int32Tag);
         }
 
+        /// <summary>
+        /// Restores node graph state from previously serialized binary data.
+        /// </summary>
+        /// <param name="data"></param>
         public void Deserialize(byte[] data)
         {
             using (var br = new BinaryReader(new MemoryStream(data)))
@@ -668,6 +705,9 @@ namespace NodeEditor
             return nv;
         }
 
+        /// <summary>
+        /// Clears node graph state.
+        /// </summary>
         public void Clear()
         {
             graph.Nodes.Clear();

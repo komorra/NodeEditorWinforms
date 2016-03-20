@@ -10,7 +10,10 @@ using System.Text;
 
 namespace NodeEditor
 {
-    [TypeConverter(typeof(DynamicNodeContextConverter))]
+    /// <summary>
+    /// Class used as internal context of each node.
+    /// </summary>
+    [TypeConverter(typeof(DynamicNodeContextConverter))]   
     public class DynamicNodeContext : DynamicObject, IEnumerable<String>
     {
         private readonly IDictionary<string, object> dynamicProperties =

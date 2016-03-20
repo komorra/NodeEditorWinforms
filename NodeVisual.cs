@@ -11,14 +11,28 @@ using System.Windows.Forms;
 
 namespace NodeEditor
 {
+    /// <summary>
+    /// Class that represents one instance of node.
+    /// </summary>
     public class NodeVisual
     {
         public const float NodeWidth = 140;
         public const float HeaderHeight = 20;
         public const float ComponentPadding = 2;
 
+        /// <summary>
+        /// Current node name.
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Current node position X coordinate.
+        /// </summary>
         public float X { get; set; }
+
+        /// <summary>
+        /// Current node position Y coordinate.
+        /// </summary>
         public float Y { get; set; }
         internal MethodInfo Type { get; set; }
         internal int Order { get; set; }
@@ -28,6 +42,10 @@ namespace NodeEditor
         private object nodeContext { get; set; } 
         internal Control CustomEditor { get; set; }
         internal string GUID = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Tag for various puposes - may be used freely.
+        /// </summary>
         public int Int32Tag = 0;
 
         internal SocketVisual[] GetSockets()
@@ -100,6 +118,9 @@ namespace NodeEditor
             return socketList.ToArray();
         }
 
+        /// <summary>
+        /// Returns node context which is dynamic type. It will contain all node default input/output properties.
+        /// </summary>
         public object GetNodeContext()
         {
             if (nodeContext == null)
@@ -127,16 +148,19 @@ namespace NodeEditor
             return nodeContext;
         }
 
-        public ParameterInfo[] GetInputs()
+        internal ParameterInfo[] GetInputs()
         {
             return Type.GetParameters().Where(x => !x.IsOut).ToArray();
         }
 
-        public ParameterInfo[] GetOutputs()
+        internal ParameterInfo[] GetOutputs()
         {
             return Type.GetParameters().Where(x => x.IsOut).ToArray();
         }
 
+        /// <summary>
+        /// Returns current size of the node.
+        /// </summary>        
         public SizeF GetNodeBounds()
         {
             var csize = new SizeF();
@@ -159,11 +183,21 @@ namespace NodeEditor
             return new SizeF(Math.Max(csize.Width, NodeWidth), Math.Max(csize.Height, h));
         }
 
+        /// <summary>
+        /// Returns current size of node caption (header belt).
+        /// </summary>
+        /// <returns></returns>
         public SizeF GetHeaderSize()
         {
             return new SizeF(GetNodeBounds().Width, HeaderHeight);
         }
 
+        /// <summary>
+        /// Allows node to be drawn on given Graphics context.       
+        /// </summary>
+        /// <param name="g">Graphics context.</param>
+        /// <param name="mouseLocation">Location of the mouse relative to NodesControl instance.</param>
+        /// <param name="mouseButtons">Mouse buttons that are pressed while drawing node.</param>
         public void Draw(Graphics g, Point mouseLocation, MouseButtons mouseButtons)
         {
             var rect = new RectangleF(new PointF(X,Y), GetNodeBounds());
@@ -195,7 +229,7 @@ namespace NodeEditor
             }
         }
 
-        public void Execute(INodesContext context)
+        internal void Execute(INodesContext context)
         {
             context.CurrentProcessingNode = this;
 
@@ -212,7 +246,7 @@ namespace NodeEditor
             }
         }
 
-        public void LayoutEditor()
+        internal void LayoutEditor()
         {
             if (CustomEditor != null)
             {

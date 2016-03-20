@@ -7,6 +7,9 @@ using System.Text;
 
 namespace NodeEditor
 {
+    /// <summary>
+    /// Converter that allows to display node context object e.g. in property grids.
+    /// </summary>
     public class DynamicNodeContextConverter : ExpandableObjectConverter
     {
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
