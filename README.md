@@ -135,3 +135,30 @@ If you are unable to follow this rules (e.g. you would to use third party librar
 
 ### Custom Node Editors
 
+Custom node editor can be any object that is subclass of System.Windows.Forms.Control class. It is maintained automatically (created and handled) by NodesControl. You can specify custom editor for each node by giving its type as customEditor parameter of Node attribute. Keep in mind that custom editor will get NodeVisual object on its Tag property, so you can easily interact with node state.
+
+NodeVisual object has a method named GetNodeContext() by which you can obtain current node state - which is dynamic object, so you can just type member name and if it is not present, the member will be created (property). Node state is a set of properties related to its inputs and outputs.
+
+Here is an example, inside your UserControl class:
+
+```cs
+    var node = (Tag as NodeVisual);
+    dynamic context = node.GetNodeContext();
+    var myVariable = context.model;
+    var myVariable2 = context.transform;
+```
+
+### Execution / Resolving
+
+To start execution just simply call nodesControl1.Execute() (without parameters), which will call the starter node (the node you had marked as isExecutionInitiator:true). After that, the graph will execute through execution path (yellow connections). While the execution process is running, each node that is being actually executed will be put into the CurrentProcessingNode property of your context.
+
+To resolve any node just call nodesControl1.Resolve(yourNodeHere) where yourNodeHere is NodeVisual class object (it must be node that comes from graph). 
+
+Resolving differs from execution, that it not need execution path to be provided. It just resolve a node with all its dependant nodes.
+
+
+### User Interaction
+
+* Right click on NodesControl to bring context menu with nodes available to put
+* Click on node to select it, shift-click to multi select
+* Ctrl+LMB on connection socket to unpin it and drag elsewhere
