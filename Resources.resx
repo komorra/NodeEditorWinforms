@@ -121,6 +121,9 @@
   <data name="exec" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\exec.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="nodeed" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\nodeed.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="socket" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\socket.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

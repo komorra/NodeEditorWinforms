@@ -12,6 +12,7 @@ using System.Windows.Forms;
 
 namespace NodeEditor
 {
+    [ToolboxBitmap(typeof(NodesControl), "nodeed")]
     public partial class NodesControl : UserControl
     {
         public class NodeToken
@@ -25,28 +26,48 @@ namespace NodeEditor
         private Timer timer = new Timer();
         private bool mdown;
         private Point lastmpos;
-        private NodeVisual dragNode;
         private SocketVisual dragSocket;
         private NodeVisual dragSocketNode;
         private PointF dragConnectionBegin;
         private PointF dragConnectionEnd;
-        private NodeVisual highlightedNode;
 
         public INodesContext Context { get; set; }
 
-        public Action<object> OnNodeContextSelected = delegate { };
-        public Action<string> OnNodeHint = delegate { };
+        public event Action<object> OnNodeContextSelected = delegate { };
+        public event Action<string> OnNodeHint = delegate { };
+        public event Action<RectangleF> OnShowLocation = delegate { };
 
         private readonly Dictionary<ToolStripMenuItem,int> allContextItems = new Dictionary<ToolStripMenuItem, int>();
         private Point lastMouseLocation;
         private Point autoScroll;
+        private PointF selectionStart;
+        private PointF selectionEnd;
 
         public NodesControl()
         {
             InitializeComponent();
             timer.Interval = 30;
             timer.Tick += TimerOnTick;
-            timer.Start();                           
+            timer.Start();        
+            KeyDown += OnKeyDown;
+            SetStyle(ControlStyles.Selectable, true);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 7)
+            {                
+                return;                
+            }
+            base.WndProc(ref m);
+        }
+
+        private void OnKeyDown(object sender, KeyEventArgs keyEventArgs)
+        {
+            if (keyEventArgs.KeyCode == Keys.Delete)
+            {
+                DeleteSelectedNodes();
+            }
         }
 
         private void TimerOnTick(object sender, EventArgs eventArgs)
@@ -71,42 +92,73 @@ namespace NodeEditor
                 NodesGraph.DrawConnection(e.Graphics, pen, dragConnectionBegin, dragConnectionEnd);
             }
 
+            if (selectionStart != PointF.Empty)
+            {
+                var rect = Rectangle.Round(MakeRect(selectionStart, selectionEnd));
+                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(50, Color.CornflowerBlue)), rect);
+                e.Graphics.DrawRectangle(new Pen(Color.DodgerBlue), rect);
+            }
+
             needRepaint = false;
         }
 
+        private static RectangleF MakeRect(PointF a, PointF b)
+        {
+            var x1 = a.X;
+            var x2 = b.X;
+            var y1 = a.Y;
+            var y2 = b.Y;
+            return new RectangleF(Math.Min(x1, x2), Math.Min(y1, y2), Math.Abs(x2 - x1), Math.Abs(y2 - y1));
+        }
+
         private void NodesControl_MouseMove(object sender, MouseEventArgs e)
-        {            
-            if (mdown)
+        {
+            var em = PointToScreen(e.Location);
+            if (selectionStart != PointF.Empty)
             {
-                if (dragNode != null)
-                {                    
-                    dragNode.X += e.X - lastmpos.X;
-                    dragNode.Y += e.Y - lastmpos.Y;
-                    dragNode.LayoutEditor();
-                    Refresh();
+                selectionEnd = e.Location;
+            }
+            if (mdown)
+            {                                            
+                foreach (var node in graph.Nodes.Where(x => x.IsSelected))
+                {
+                    node.X += em.X - lastmpos.X;
+                    node.Y += em.Y - lastmpos.Y;
+                    node.LayoutEditor();
                 }
+                if (graph.Nodes.Exists(x => x.IsSelected))
+                {
+                    var n = graph.Nodes.FirstOrDefault(x => x.IsSelected);
+                    var bound = new RectangleF(new PointF(n.X,n.Y), n.GetNodeBounds());
+                    foreach (var node in graph.Nodes.Where(x=>x.IsSelected))
+                    {
+                        bound = RectangleF.Union(bound, new RectangleF(new PointF(node.X, node.Y), node.GetNodeBounds()));
+                    }
+                    OnShowLocation(bound);
+                }
+                Invalidate();
+                
                 if (dragSocket != null)
                 {
                     var center = new PointF(dragSocket.X + dragSocket.Width/2f, dragSocket.Y + dragSocket.Height/2f);
                     if (dragSocket.Input)
                     {
-                        dragConnectionBegin = e.Location;
+                        dragConnectionBegin.X += em.X - lastmpos.X;
+                        dragConnectionBegin.Y += em.Y - lastmpos.Y;
                         dragConnectionEnd = center;
+                        OnShowLocation(new RectangleF(dragConnectionBegin, new SizeF(10, 10)));
                     }
                     else
                     {
                         dragConnectionBegin = center;
-                        dragConnectionEnd = e.Location;
+                        dragConnectionEnd.X += em.X - lastmpos.X;
+                        dragConnectionEnd.Y += em.Y - lastmpos.Y;
+                        OnShowLocation(new RectangleF(dragConnectionEnd, new SizeF(10, 10)));
                     }
+                    
                 }
-                lastmpos = e.Location;
-            }
-            else
-            {
-                highlightedNode =
-                    graph.Nodes.OrderBy(x => x.Order).FirstOrDefault(
-                        x => new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds()).Contains(e.Location));
-            }
+                lastmpos = em;
+            }            
 
             needRepaint = true;
         }
@@ -115,16 +167,33 @@ namespace NodeEditor
         {                        
             if (e.Button == MouseButtons.Left)
             {
+                selectionStart  = PointF.Empty;                
+
+                Focus();
+
+                if ((ModifierKeys & Keys.Shift) != Keys.Shift)
+                {
+                    graph.Nodes.ForEach(x => x.IsSelected = false);
+                }
+
                 var node =
                     graph.Nodes.OrderBy(x => x.Order).FirstOrDefault(
                         x => new RectangleF(new PointF(x.X, x.Y), x.GetHeaderSize()).Contains(e.Location));
 
                 if (node != null && !mdown)
                 {
+                    
+                    node.IsSelected = true;
+                    
                     node.Order = graph.Nodes.Min(x => x.Order) - 1;
-                    dragNode = node;
+                    if (node.CustomEditor != null)
+                    {
+                        node.CustomEditor.BringToFront();
+                    }
                     mdown = true;
-                    lastmpos = e.Location;
+                    lastmpos = PointToScreen(e.Location);
+
+                    Refresh();
                 }
                 if (node == null && !mdown)
                 {
@@ -175,8 +244,12 @@ namespace NodeEditor
                             dragConnectionBegin = e.Location;
                             dragConnectionEnd = e.Location;
                             mdown = true;
-                            lastmpos = e.Location;
+                            lastmpos = PointToScreen(e.Location);
                         }
+                    }
+                    else
+                    {
+                        selectionStart = selectionEnd = e.Location;
                     }
                 }
                 if (node != null)
@@ -218,7 +291,15 @@ namespace NodeEditor
         }
 
         private void NodesControl_MouseUp(object sender, MouseEventArgs e)
-        {            
+        {
+            if (selectionStart != PointF.Empty)
+            {
+                var rect = MakeRect(selectionStart, selectionEnd);
+                graph.Nodes.ForEach(
+                    x => x.IsSelected = rect.Contains(new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds())));
+                selectionStart = PointF.Empty;
+            }
+
             if (dragSocket != null)
             {
                 var nodeWhole =
@@ -255,8 +336,7 @@ namespace NodeEditor
                     }
                 }
             }
-
-            dragNode = null;
+           
             dragSocket = null;
             mdown = false;
             needRepaint = true;
@@ -323,17 +403,15 @@ namespace NodeEditor
                             }).Where(x => x.Attribute != null);
 
                 var context = new ContextMenuStrip();
-                if (highlightedNode != null)
+                if (graph.Nodes.Exists(x=>x.IsSelected))
                 {
-                    context.Items.Add("Delete Node", null, ((o, args) =>
+                    context.Items.Add("Delete Node(s)", null, ((o, args) =>
                     {
-                        if (highlightedNode != null)
-                        {
-                            graph.Nodes.Remove(highlightedNode);
-                            graph.Connections.RemoveAll(
-                                x => x.OutputNode == highlightedNode || x.InputNode == highlightedNode);
-                            Controls.Remove(highlightedNode.CustomEditor);
-                        }
+                        DeleteSelectedNodes();
+                    }));
+                    context.Items.Add("Duplicate Node(s)", null, ((o, args) =>
+                    {
+                        DuplicateSelectedNodes();
                     }));
                     context.Items.Add(new ToolStripSeparator());
                 }
@@ -381,6 +459,48 @@ namespace NodeEditor
             }
         }
 
+        private void DuplicateSelectedNodes()
+        {
+            var cloned = new List<NodeVisual>();
+            foreach (var n in graph.Nodes.Where(x => x.IsSelected))
+            {
+                int count = graph.Nodes.Count(x => x.IsSelected);
+                var ms = new MemoryStream();
+                var bw = new BinaryWriter(ms);
+                SerializeNode(bw, n);
+                ms.Seek(0, SeekOrigin.Begin);
+                var br = new BinaryReader(ms);
+                var clone = DeserializeNode(br);
+                clone.X += 40;
+                clone.Y += 40;
+                clone.GUID = Guid.NewGuid().ToString();
+                cloned.Add(clone);
+                br.Dispose();
+                bw.Dispose();
+                ms.Dispose();
+            }
+            graph.Nodes.ForEach(x => x.IsSelected = false);
+            cloned.ForEach(x => x.IsSelected = true);
+            cloned.Where(x => x.CustomEditor != null).ToList().ForEach(x => x.CustomEditor.BringToFront());
+            graph.Nodes.AddRange(cloned);
+            Invalidate();
+        }
+
+        private void DeleteSelectedNodes()
+        {
+            if (graph.Nodes.Exists(x => x.IsSelected))
+            {
+                foreach (var n in graph.Nodes.Where(x => x.IsSelected))
+                {
+                    Controls.Remove(n.CustomEditor);
+                    graph.Connections.RemoveAll(
+                        x => x.OutputNode == n || x.InputNode == n);
+                }
+                graph.Nodes.RemoveAll(x => graph.Nodes.Where(n => n.IsSelected).Contains(x));
+            }
+            Invalidate();
+        }
+
         public void Execute(NodeVisual node = null)
         {
             var init = node ?? graph.Nodes.FirstOrDefault(x => x.ExecInit);
@@ -426,29 +546,7 @@ namespace NodeEditor
                 bw.Write(graph.Nodes.Count);
                 foreach (var node in graph.Nodes)
                 {
-                    bw.Write(node.GUID);
-                    bw.Write(node.X);
-                    bw.Write(node.Y);
-                    bw.Write(node.Callable);
-                    bw.Write(node.ExecInit);
-                    bw.Write(node.Name);
-                    bw.Write(node.Order);
-                    if (node.CustomEditor == null)
-                    {
-                        bw.Write("");
-                        bw.Write("");
-                    }
-                    else
-                    {
-                        bw.Write(node.CustomEditor.GetType().Assembly.GetName().Name);
-                        bw.Write(node.CustomEditor.GetType().FullName);
-                    }
-                    bw.Write(node.Type.Name);
-                    var context = (node.GetNodeContext() as DynamicNodeContext).Serialize();
-                    bw.Write(context.Length);
-                    bw.Write(context);
-                    bw.Write(4); //additional data size per node
-                    bw.Write(node.Int32Tag);
+                    SerializeNode(bw, node);
                 }
                 bw.Write(graph.Connections.Count);
                 foreach (var connection in graph.Connections)
@@ -465,6 +563,33 @@ namespace NodeEditor
             }
         }
 
+        private static void SerializeNode(BinaryWriter bw, NodeVisual node)
+        {
+            bw.Write(node.GUID);
+            bw.Write(node.X);
+            bw.Write(node.Y);
+            bw.Write(node.Callable);
+            bw.Write(node.ExecInit);
+            bw.Write(node.Name);
+            bw.Write(node.Order);
+            if (node.CustomEditor == null)
+            {
+                bw.Write("");
+                bw.Write("");
+            }
+            else
+            {
+                bw.Write(node.CustomEditor.GetType().Assembly.GetName().Name);
+                bw.Write(node.CustomEditor.GetType().FullName);
+            }
+            bw.Write(node.Type.Name);
+            var context = (node.GetNodeContext() as DynamicNodeContext).Serialize();
+            bw.Write(context.Length);
+            bw.Write(context);
+            bw.Write(4); //additional data size per node
+            bw.Write(node.Int32Tag);
+        }
+
         public void Deserialize(byte[] data)
         {
             using (var br = new BinaryReader(new MemoryStream(data)))
@@ -479,42 +604,7 @@ namespace NodeEditor
                 int nodeCount = br.ReadInt32();
                 for (int i = 0; i < nodeCount; i++)
                 {
-                    var nv = new NodeVisual();
-                    nv.GUID = br.ReadString();
-                    nv.X = br.ReadSingle();
-                    nv.Y = br.ReadSingle();
-                    nv.Callable = br.ReadBoolean();
-                    nv.ExecInit = br.ReadBoolean();
-                    nv.Name = br.ReadString();
-                    nv.Order = br.ReadInt32();
-                    var customEditorAssembly = br.ReadString();
-                    var customEditor = br.ReadString();                                                        
-                    nv.Type = Context.GetType().GetMethod(br.ReadString());
-                    (nv.GetNodeContext() as DynamicNodeContext).Deserialize(br.ReadBytes(br.ReadInt32()));
-                    
-                    var additional = br.ReadInt32(); //read additional data
-                    if (additional >= 4)
-                    {
-                        nv.Int32Tag = br.ReadInt32();
-                    }
-                    if (additional > 4)
-                    {
-                        br.ReadBytes(additional - 4);
-                    }
-
-                    if (customEditor != "")
-                    {
-                        nv.CustomEditor =
-                            Activator.CreateInstance(AppDomain.CurrentDomain, customEditorAssembly, customEditor).Unwrap() as Control;
-
-                        Control ctrl = nv.CustomEditor;
-                        if (ctrl != null)
-                        {                            
-                            ctrl.Tag = nv;                            
-                            Controls.Add(ctrl);
-                        }
-                        nv.LayoutEditor();
-                    }
+                    var nv = DeserializeNode(br);
 
                     graph.Nodes.Add(nv);
                 }
@@ -535,6 +625,47 @@ namespace NodeEditor
                 br.ReadBytes(br.ReadInt32()); //read additional data
             }
             Refresh();
+        }
+
+        private NodeVisual DeserializeNode(BinaryReader br)
+        {
+            var nv = new NodeVisual();
+            nv.GUID = br.ReadString();
+            nv.X = br.ReadSingle();
+            nv.Y = br.ReadSingle();
+            nv.Callable = br.ReadBoolean();
+            nv.ExecInit = br.ReadBoolean();
+            nv.Name = br.ReadString();
+            nv.Order = br.ReadInt32();
+            var customEditorAssembly = br.ReadString();
+            var customEditor = br.ReadString();
+            nv.Type = Context.GetType().GetMethod(br.ReadString());
+            (nv.GetNodeContext() as DynamicNodeContext).Deserialize(br.ReadBytes(br.ReadInt32()));
+
+            var additional = br.ReadInt32(); //read additional data
+            if (additional >= 4)
+            {
+                nv.Int32Tag = br.ReadInt32();
+            }
+            if (additional > 4)
+            {
+                br.ReadBytes(additional - 4);
+            }
+
+            if (customEditor != "")
+            {
+                nv.CustomEditor =
+                    Activator.CreateInstance(AppDomain.CurrentDomain, customEditorAssembly, customEditor).Unwrap() as Control;
+
+                Control ctrl = nv.CustomEditor;
+                if (ctrl != null)
+                {
+                    ctrl.Tag = nv;
+                    Controls.Add(ctrl);
+                }
+                nv.LayoutEditor();
+            }
+            return nv;
         }
 
         public void Clear()

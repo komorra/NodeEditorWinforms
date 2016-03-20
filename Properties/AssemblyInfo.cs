@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("NodeEditor")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Node Editor Winforms")]
+[assembly: AssemblyDescription("Node based user control / editor for Windows Forms")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Mariusz Komorowski")]
 [assembly: AssemblyProduct("NodeEditor")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("Copyright ©  2016 Mariusz Komorowski")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

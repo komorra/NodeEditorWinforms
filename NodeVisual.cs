@@ -24,6 +24,7 @@ namespace NodeEditor
         internal int Order { get; set; }
         internal bool Callable { get; set; }
         internal bool ExecInit { get; set; }
+        internal bool IsSelected { get; set; }
         private object nodeContext { get; set; } 
         internal Control CustomEditor { get; set; }
         internal string GUID = Guid.NewGuid().ToString();
@@ -167,12 +168,21 @@ namespace NodeEditor
         {
             var rect = new RectangleF(new PointF(X,Y), GetNodeBounds());
 
-            g.FillRectangle(Brushes.LightCyan, rect);
+           
 
             var caption = new RectangleF(new PointF(X,Y), GetHeaderSize());
-            bool mouseHoverCaption = caption.Contains(mouseLocation);                        
+            bool mouseHoverCaption = caption.Contains(mouseLocation);
 
-            g.FillRectangle(mouseHoverCaption ? Brushes.Cyan : Brushes.Aquamarine, caption);
+            if (IsSelected)
+            {
+                g.FillRectangle(Brushes.WhiteSmoke, rect);
+                g.FillRectangle(mouseHoverCaption ? Brushes.Gold : Brushes.Goldenrod, caption);
+            }
+            else
+            {
+                g.FillRectangle(Brushes.LightCyan, rect);
+                g.FillRectangle(mouseHoverCaption ? Brushes.Cyan : Brushes.Aquamarine, caption);
+            }
             g.DrawRectangle(Pens.Gray, Rectangle.Round(caption));
             g.DrawRectangle(Pens.Black, Rectangle.Round(rect));
 

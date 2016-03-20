@@ -73,6 +73,16 @@ namespace NodeEditor {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap nodeed {
+            get {
+                object obj = ResourceManager.GetObject("nodeed", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap socket {
             get {
                 object obj = ResourceManager.GetObject("socket", resourceCulture);
