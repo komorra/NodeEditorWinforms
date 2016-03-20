@@ -27,7 +27,111 @@ Within the Winforms designer right click on the Toolbox and select Choose Items 
 
 ### Step 3 - Adding & extending Node Editor context type
 
+When you have NodesControl in your form or user control you should do first some minimal preparation. This step involves creating special context class that should implement INodesContext interface. In this context class you can put methods that will be exposed automatically as nodes by adding Node attribute to each method. Look at the example:
+
+```csharp
+    // Our context class that implements INodeContext interface
+    public class FContext : INodesContext
+    {
+        // This is implementation of INodesContext.
+        // CurrentProcessingNode is the node that is being actually executed.
+        public NodeVisual CurrentProcessingNode { get; set; }
+        
+        // Some your project specific methods, events, properties and so on
+        public event Action<Model3D, Matrix> Placement = delegate { };
+        public event Action<Bounding> ShowBounding = delegate { }; 
+        public event Action Clear = delegate { };
+
+        // Starter node - it has isExecutionInitiator as true, so it will have one execution path output
+        // name is the node name displayed in node caption
+        // menu is the path splitted by '/' character if you want to build hierarchical menu
+        // description is a node description that will be sent in special event at some situations
+        [Node(name:"Starter", menu:"General", isExecutionInitiator:true, description:"Node from which processing begins.")]
+        public void Starter()
+        {
+            Clear();
+        }
+
+        // Node with one input (object obj)
+        [Node(name:"Display Object", menu:"Debug", description:"Allows to show any output in popup message box.")]
+        public void ShowMessage(object obj)
+        {
+            MessageBox.Show(obj.ToString(), "Nodes Debug: " + obj.GetType().Name, MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        // Node with custom editor that has two inputs (string path and bool useCage) and one output socket (out Model3D model)
+        [Node(name: "Load Model", menu:"General", customEditor:typeof(NELoadModel3D), description:"Node that loads 3D model from disk and also textures together.")]
+        public void LoadModel(string path, bool useCage, out Model3D model)
+        {
+            model = new Model3D();
+            var fileNames = path.Split(';');
+            InitAsset(fileNames, model.Asset);
+            model.Asset.MakeObject(useCage);
+        }
+      }
+```
+
+Next thing is to create our context object and put it in our NodesControl:
+
+```csharp
+  var context = new FContext();
+  nodesControl1.Context = context;
+```
+
+Now you have right setup and during application runtime, there context menu will appear after right clicking on NodesControl.
+
 ### Serialization
 
+NodesControl has byte[] Serialize() and Deserialize(byte[] data) methods that allow you to save and load node graph state. However you should design your classes that you use as inputs/outputs of nodes with some additional code due to proper serialization and deserialization.
 
+* The class for node input/output should have [Serializable] attribute
+* It is good to have also  [TypeConverter(typeof(ExpandableObjectConverter))] attribute in order to work properly with property grids
+* The class should implement ISerializable interface
+* The class should has public constructor and private one, that has parameters: (SerializationInfo info, StreamingContext ctx)
+* The class should implement GetObjectData method of ISerializable
+
+This is example of such a class:
+
+```csharp
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Vector3W : ISerializable
+    {
+        public Vector3 Value;
+
+        public float X { get { return Value.X; } set { Value.X = value; } }
+        public float Y { get { return Value.Y; } set { Value.Y = value; } }
+        public float Z { get { return Value.Z; } set { Value.Z = value; } }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+
+        public Vector3W()
+        {
+            
+        }
+
+        private Vector3W(SerializationInfo info, StreamingContext ctx)
+        {
+            X = info.GetSingle("X");
+            Y = info.GetSingle("Y");
+            Z = info.GetSingle("Z");
+        }
+
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("X", X);
+            info.AddValue("Y", Y);
+            info.AddValue("Z", Z);
+        }
+    }
+```
+
+If you are unable to follow this rules (e.g. you would to use third party library types) you should write wrapper for that classes, that meets the above conditions.
+
+### Custom Node Editors
 
