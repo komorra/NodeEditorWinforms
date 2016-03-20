@@ -171,4 +171,4 @@ Programming: Mariusz Komorowski - [@komorra86](https://twitter.com/komorra86)
 
 ### License
 
-This piece of software is licensed under [MIT License](../blob/master/License.md)
+This piece of software is licensed under [MIT License](../master/License.md)
