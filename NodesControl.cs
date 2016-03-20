@@ -417,7 +417,7 @@ namespace NodeEditor
                 }
                 if (allContextItems.Values.Any(x => x > 0))
                 {
-                    var handy = allContextItems.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(8);
+                    var handy = allContextItems.Where(x => x.Value > 0 && !string.IsNullOrEmpty(((x.Key.Tag) as NodeToken).Attribute.Menu)).OrderByDescending(x => x.Value).Take(8);
                     foreach (var kv in handy)
                     {
                         context.Items.Add(kv.Key);
