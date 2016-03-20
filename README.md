@@ -29,7 +29,7 @@ Within the Winforms designer right click on the Toolbox and select Choose Items 
 
 When you have NodesControl in your form or user control you should do first some minimal preparation. This step involves creating special context class that should implement INodesContext interface. In this context class you can put methods that will be exposed automatically as nodes by adding Node attribute to each method. Look at the example:
 
-```csharp
+```cs
     // Our context class that implements INodeContext interface
     public class FContext : INodesContext
     {
@@ -74,7 +74,7 @@ When you have NodesControl in your form or user control you should do first some
 
 Next thing is to create our context object and put it in our NodesControl:
 
-```csharp
+```cs
   var context = new FContext();
   nodesControl1.Context = context;
 ```
@@ -93,7 +93,7 @@ NodesControl has byte[] Serialize() and Deserialize(byte[] data) methods that al
 
 This is example of such a class:
 
-```csharp
+```cs
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class Vector3W : ISerializable
