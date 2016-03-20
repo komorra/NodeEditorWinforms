@@ -14,6 +14,7 @@ Node Editor Winforms is a Windows Forms class library project, that provides nod
 * Nodes could be selected, multi-selected by shift click or by dragging selection area around
 * Flexible connections attractive visually
 * Easy integration with property grid
+* Easy serialization / deserialization of entire node graph
 
 ## Usage
 
@@ -166,3 +167,8 @@ Resolving differs from execution, that it not need execution path to be provided
 ### Credits & Contact
 
 Programming: Mariusz Komorowski - [@komorra86](https://twitter.com/komorra86)
+
+
+### License
+
+This piece of software is licensed under [MIT License](../blob/master/License.md)
