@@ -36,11 +36,16 @@ namespace NodeEditor
         public string Name { get; set; }
         public Type Type { get; set; }
         public bool Input { get; set; }
+        public object Value { get; set; }
+        public bool IsMainExecution { get; set; }
+
+        public bool IsExecution
+        {
+            get { return Type.Name.Replace("&", "") == typeof (ExecutionPath).Name; }
+        }
 
         public void Draw(Graphics g, Point mouseLocation, MouseButtons mouseButtons)
-        {
-            
-
+        {            
             var socketRect = new RectangleF(X, Y, Width, Height);
             var hover = socketRect.Contains(mouseLocation);
             var fontBrush = Brushes.Black;
@@ -72,7 +77,7 @@ namespace NodeEditor
             g.InterpolationMode = InterpolationMode.HighQualityBilinear;
             g.SmoothingMode = SmoothingMode.HighQuality;
 
-            if (Type == typeof (ExecutionPath))
+            if (IsExecution)
             {
                 g.DrawImage(Resources.exec, socketRect);
             }

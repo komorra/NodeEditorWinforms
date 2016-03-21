@@ -95,7 +95,11 @@ namespace NodeEditor
 
         public object this[string key]
         {
-            get { return dynamicProperties[key]; }
+            get
+            {
+                if (!dynamicProperties.ContainsKey(key)) return null;
+                return dynamicProperties[key];
+            }
             set
             {
                 if (!dynamicProperties.ContainsKey(key))

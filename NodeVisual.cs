@@ -59,6 +59,7 @@ namespace NodeEditor
         private object nodeContext { get; set; } 
         internal Control CustomEditor { get; set; }
         internal string GUID = Guid.NewGuid().ToString();
+        public bool IsBackExecuted { get; internal set; }
 
         /// <summary>
         /// Tag for various puposes - may be used freely.
@@ -82,6 +83,7 @@ namespace NodeEditor
                         Height = SocketVisual.SocketHeight,
                         Name = "Enter",
                         Type = typeof (ExecutionPath),
+                        IsMainExecution = true,
                         Width = SocketVisual.SocketHeight,
                         X = X,
                         Y = Y + curInputH,
@@ -92,6 +94,7 @@ namespace NodeEditor
                 {
                     Height = SocketVisual.SocketHeight,
                     Name = "Exit",
+                    IsMainExecution = true,
                     Type = typeof (ExecutionPath),
                     Width = SocketVisual.SocketHeight,
                     X = X + NodeWidth - SocketVisual.SocketHeight,
@@ -116,7 +119,7 @@ namespace NodeEditor
 
                 curInputH += SocketVisual.SocketHeight + ComponentPadding;
             }
-
+            var ctx = GetNodeContext() as DynamicNodeContext;
             foreach (var output in GetOutputs())
             {
                 var socket = new SocketVisual();
@@ -125,8 +128,8 @@ namespace NodeEditor
                 socket.Name = output.Name;
                 socket.Width = SocketVisual.SocketHeight;
                 socket.X = X + NodeWidth - SocketVisual.SocketHeight;
-                socket.Y = Y + curOutputH;                
-
+                socket.Y = Y + curOutputH;
+                socket.Value = ctx[socket.Name];              
                 socketList.Add(socket);
 
                 curOutputH += SocketVisual.SocketHeight + ComponentPadding;
@@ -150,6 +153,14 @@ namespace NodeEditor
                     var p = input.ParameterType == typeof(string) ? "" :
                         Activator.CreateInstance(AppDomain.CurrentDomain, input.ParameterType.Assembly.GetName().Name,
                             input.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
+                    if (!Convert.IsDBNull(input.DefaultValue))
+                    {
+                        var def = Convert.ChangeType(input.DefaultValue, p.GetType());
+                        if (def != null)
+                        {
+                            p = def;
+                        }
+                    }
                     context[input.Name.Replace(" ", "")] = p;
                 }
                 foreach (var output in GetOutputs())
@@ -157,6 +168,14 @@ namespace NodeEditor
                     var p = output.ParameterType == typeof(string) ? "" :
                        Activator.CreateInstance(AppDomain.CurrentDomain, output.ParameterType.Assembly.GetName().Name,
                             output.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
+                    if (!Convert.IsDBNull(output.DefaultValue))
+                    {
+                        var def = Convert.ChangeType(output.DefaultValue, p.GetType());
+                        if (def != null)
+                        {
+                            p = def;
+                        }
+                    }
                     context[output.Name.Replace(" ", "")] = p;
                 }
 
@@ -255,10 +274,17 @@ namespace NodeEditor
 
             Type.Invoke(context, parameters);
 
+            var outs = GetSockets();
+
             int ndx = 0;
             foreach (var parameter in dc.ToArray())
             {
                 dc[parameter] = parameters[ndx];
+                var o = outs.FirstOrDefault(x => x.Name == parameter);
+                if (o != null)
+                {
+                    o.Value = dc[parameter];
+                }
                 ndx++;
             }
         }

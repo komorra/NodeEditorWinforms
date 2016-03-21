@@ -50,6 +50,7 @@ namespace NodeEditor
         private NodeVisual dragSocketNode;
         private PointF dragConnectionBegin;
         private PointF dragConnectionEnd;
+        private Stack<NodeVisual> executionStack = new Stack<NodeVisual>();
 
         /// <summary>
         /// Context of the editor. You should set here an instance that implements INodesContext interface.
@@ -551,11 +552,30 @@ namespace NodeEditor
             {
                 Resolve(init);
                 init.Execute(Context);
-                var connection = graph.Connections.FirstOrDefault(
-                    x => x.OutputNode == init && x.OutputSocket.Type == typeof (ExecutionPath));
+                var connection =
+                    graph.Connections.FirstOrDefault(
+                        x => x.OutputNode == init && x.IsExecution && x.OutputSocket.Value!= null && (x.OutputSocket.Value as ExecutionPath).IsSignaled);
+                if(connection == null)
+                {
+                    connection = graph.Connections.FirstOrDefault(x => x.OutputNode == init && x.IsExecution && x.OutputSocket.IsMainExecution);                   
+                }
+                else
+                {
+                    executionStack.Push(init);
+                }
                 if (connection != null)
-                {                    
+                {
+                    connection.InputNode.IsBackExecuted = false;
                     Execute(connection.InputNode);
+                }
+                else
+                {
+                    if (executionStack.Count > 0)
+                    {
+                        var back = executionStack.Pop();
+                        back.IsBackExecuted = true;
+                        Execute(back);
+                    }
                 }
             }
         }

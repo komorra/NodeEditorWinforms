@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace NodeEditor
@@ -25,7 +26,29 @@ namespace NodeEditor
     /// <summary>
     /// Class that represents output/input type of execution path.
     /// </summary>
-    public class ExecutionPath
+    [Serializable]
+    public class ExecutionPath : ISerializable
     {
+        public bool IsSignaled { get; internal set; }
+
+        public void Signal()
+        {
+            IsSignaled = true;
+        }
+
+        public ExecutionPath()
+        {
+            
+        }
+
+        private ExecutionPath(SerializationInfo info, StreamingContext ctx)
+        {
+            
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+                       
+        }
     }
 }

@@ -41,7 +41,7 @@ namespace NodeEditor
 
         public bool IsExecution
         {
-            get { return OutputSocket.Type == typeof (ExecutionPath); }
+            get { return OutputSocket.IsExecution; }
         }
     }
 }
