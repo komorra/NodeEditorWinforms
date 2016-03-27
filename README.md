@@ -5,6 +5,10 @@ Node Editor Winforms is a Windows Forms class library project, that provides nod
 
 ![Example of Node Editor usage in 3D application](http://i.imgur.com/GDJG8pf.png)
 
+## Changelog
+* 2016.03.27 - Fixed crash when the node method parameters was reordered. Added feature of sending feedback to the node graph from context.
+* 2016.03.21 - Added support for multiple execution path outputs per node, that implies ability to create more complex control flow nodes like loops, conditional nodes etc.
+
 ## Features
 
 * Automatic context menu creation based on methods with Node attribute detected in INodeContext class instance
