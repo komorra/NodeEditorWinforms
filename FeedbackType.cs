@@ -23,19 +23,13 @@ using System.Text;
 namespace NodeEditor
 {
     /// <summary>
-    /// Interface that every NodesControl context should implement.
+    /// Feedback types used in INodeContext, to specify kind of feedback
     /// </summary>
-    public interface INodesContext
+    public enum FeedbackType
     {
-        /// <summary>
-        /// Property that is set to actual processed node during execution process.
-        /// </summary>
-        NodeVisual CurrentProcessingNode { get; set; }
-
-        /// <summary>
-        /// Event that can be raised when your application would to return some feedback information
-        /// to the nodes graph. (Message, Related Node, Feedback Type, Tag - Anything, BreakExecution)
-        /// </summary>
-        event Action<string, NodeVisual, FeedbackType, object, bool> FeedbackInfo;
+        Debug,
+        Information,
+        Warning,
+        Error,
     }
 }

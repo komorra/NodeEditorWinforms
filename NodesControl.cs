@@ -56,7 +56,22 @@ namespace NodeEditor
         /// Context of the editor. You should set here an instance that implements INodesContext interface.
         /// In context you should define your nodes (methods decorated by Node attribute).
         /// </summary>
-        public INodesContext Context { get; set; }
+        public INodesContext Context
+        {
+            get { return context; }
+            set
+            {
+                if (context != null)
+                {
+                    context.FeedbackInfo -= ContextOnFeedbackInfo;
+                }
+                context = value;
+                if (context != null)
+                {
+                    context.FeedbackInfo += ContextOnFeedbackInfo;
+                }
+            }
+        }
 
         /// <summary>
         /// Occurs when user selects a node. In the object will be passed node settings for unplugged inputs/outputs.
@@ -75,10 +90,18 @@ namespace NodeEditor
         public event Action<RectangleF> OnShowLocation = delegate { };
 
         private readonly Dictionary<ToolStripMenuItem,int> allContextItems = new Dictionary<ToolStripMenuItem, int>();
+
         private Point lastMouseLocation;
+
         private Point autoScroll;
+
         private PointF selectionStart;
+
         private PointF selectionEnd;
+
+        private INodesContext context;
+
+        private bool breakExecution = false;        
 
         /// <summary>
         /// Default constructor
@@ -91,6 +114,16 @@ namespace NodeEditor
             timer.Start();        
             KeyDown += OnKeyDown;
             SetStyle(ControlStyles.Selectable, true);
+        }
+
+        private void ContextOnFeedbackInfo(string message, NodeVisual nodeVisual, FeedbackType type, object tag, bool breakExecution)
+        {
+            this.breakExecution = breakExecution;
+            if (breakExecution)
+            {
+                nodeVisual.Feedback = type;
+                OnNodeHint(message);
+            }
         }
 
         protected override void WndProc(ref Message m)
@@ -547,9 +580,18 @@ namespace NodeEditor
         /// <param name="node"></param>
         public void Execute(NodeVisual node = null)
         {
+            if (breakExecution)
+            {
+                breakExecution = false;
+                executionStack.Clear();
+                return;
+            }
+
             var init = node ?? graph.Nodes.FirstOrDefault(x => x.ExecInit);
             if (init != null)
             {
+                init.Feedback = FeedbackType.Debug;
+
                 Resolve(init);
                 init.Execute(Context);
                 var connection =

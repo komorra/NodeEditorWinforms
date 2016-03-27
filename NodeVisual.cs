@@ -56,6 +56,7 @@ namespace NodeEditor
         internal bool Callable { get; set; }
         internal bool ExecInit { get; set; }
         internal bool IsSelected { get; set; }
+        internal FeedbackType Feedback { get; set; }
         private object nodeContext { get; set; } 
         internal Control CustomEditor { get; set; }
         internal string GUID = Guid.NewGuid().ToString();
@@ -65,6 +66,12 @@ namespace NodeEditor
         /// Tag for various puposes - may be used freely.
         /// </summary>
         public int Int32Tag = 0;
+
+
+        internal NodeVisual()
+        {
+            Feedback = FeedbackType.Debug;
+        }
 
         internal SocketVisual[] GetSockets()
         {
@@ -238,7 +245,17 @@ namespace NodeEditor
         {
             var rect = new RectangleF(new PointF(X,Y), GetNodeBounds());
 
-           
+            var feedrect = rect;
+            feedrect.Inflate(10, 10);
+
+            if (Feedback == FeedbackType.Warning)
+            {
+                g.DrawRectangle(new Pen(Color.Yellow, 4), Rectangle.Round(feedrect));
+            }
+            else if (Feedback == FeedbackType.Error)
+            {
+                g.DrawRectangle(new Pen(Color.Red, 5), Rectangle.Round(feedrect));
+            }
 
             var caption = new RectangleF(new PointF(X,Y), GetHeaderSize());
             bool mouseHoverCaption = caption.Contains(mouseLocation);
@@ -270,22 +287,28 @@ namespace NodeEditor
             context.CurrentProcessingNode = this;
 
             var dc = (GetNodeContext() as DynamicNodeContext);
-            var parameters = dc.ToArray().Select(x => dc[x]).ToArray();
+            var parametersDict = Type.GetParameters().OrderBy(x => x.Position).ToDictionary(x => x.Name, x => dc[x.Name]);
+            var parameters = parametersDict.Values.ToArray();
 
+            int ndx = 0;
             Type.Invoke(context, parameters);
+            foreach (var kv in parametersDict.ToArray())
+            {
+                parametersDict[kv.Key] = parameters[ndx];
+                ndx++;
+            }
 
             var outs = GetSockets();
 
-            int ndx = 0;
+            
             foreach (var parameter in dc.ToArray())
             {
-                dc[parameter] = parameters[ndx];
+                dc[parameter] = parametersDict[parameter];
                 var o = outs.FirstOrDefault(x => x.Name == parameter);
                 if (o != null)
                 {
                     o.Value = dc[parameter];
-                }
-                ndx++;
+                }                
             }
         }
 
