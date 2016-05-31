@@ -60,6 +60,7 @@ namespace NodeEditor
         private object nodeContext { get; set; } 
         internal Control CustomEditor { get; set; }
         internal string GUID = Guid.NewGuid().ToString();
+        internal Color NodeColor = Color.LightCyan;
         public bool IsBackExecuted { get; internal set; }
 
         /// <summary>
@@ -265,14 +266,15 @@ namespace NodeEditor
             var caption = new RectangleF(new PointF(X,Y), GetHeaderSize());
             bool mouseHoverCaption = caption.Contains(mouseLocation);
 
+            g.FillRectangle(new SolidBrush(NodeColor), rect);
+
             if (IsSelected)
             {
-                g.FillRectangle(Brushes.WhiteSmoke, rect);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(180,Color.WhiteSmoke)), rect);
                 g.FillRectangle(mouseHoverCaption ? Brushes.Gold : Brushes.Goldenrod, caption);
             }
             else
-            {
-                g.FillRectangle(Brushes.LightCyan, rect);
+            {                
                 g.FillRectangle(mouseHoverCaption ? Brushes.Cyan : Brushes.Aquamarine, caption);
             }
             g.DrawRectangle(Pens.Gray, Rectangle.Round(caption));

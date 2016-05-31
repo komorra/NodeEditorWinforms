@@ -486,6 +486,10 @@ namespace NodeEditor
                     {
                         DuplicateSelectedNodes();
                     }));
+                    context.Items.Add("Change Color ...", null, ((o, args) =>
+                    {
+                        ChangeSelectedNodesColor();
+                    }));
                     if(graph.Nodes.Count(x=>x.IsSelected)==2)
                     {
                         var sel = graph.Nodes.Where(x => x.IsSelected).ToArray();
@@ -545,6 +549,21 @@ namespace NodeEditor
                 }
                 context.Show(MousePosition);
             }
+        }
+
+        private void ChangeSelectedNodesColor()
+        {
+            ColorDialog cd = new ColorDialog();
+            cd.FullOpen = true;
+            if (cd.ShowDialog() == DialogResult.OK)
+            {
+                foreach (var n in graph.Nodes.Where(x => x.IsSelected))
+                {
+                    n.NodeColor = cd.Color;
+                }
+            }
+            Refresh();
+            needRepaint = true;
         }
 
         private void DuplicateSelectedNodes()
@@ -769,8 +788,9 @@ namespace NodeEditor
             var context = (node.GetNodeContext() as DynamicNodeContext).Serialize();
             bw.Write(context.Length);
             bw.Write(context);
-            bw.Write(4); //additional data size per node
+            bw.Write(8); //additional data size per node
             bw.Write(node.Int32Tag);
+            bw.Write(node.NodeColor.ToArgb());
         }
 
         /// <summary>
@@ -833,10 +853,14 @@ namespace NodeEditor
             if (additional >= 4)
             {
                 nv.Int32Tag = br.ReadInt32();
+                if(additional >= 8)
+                {
+                    nv.NodeColor = Color.FromArgb(br.ReadInt32());
+                }
             }
-            if (additional > 4)
+            if (additional > 8)
             {
-                br.ReadBytes(additional - 4);
+                br.ReadBytes(additional - 8);
             }
 
             if (customEditor != "")
