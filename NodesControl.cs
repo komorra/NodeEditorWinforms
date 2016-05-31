@@ -486,6 +486,21 @@ namespace NodeEditor
                     {
                         DuplicateSelectedNodes();
                     }));
+                    if(graph.Nodes.Count(x=>x.IsSelected)==2)
+                    {
+                        var sel = graph.Nodes.Where(x => x.IsSelected).ToArray();
+                        context.Items.Add("Check Impact", null, ((o,args)=>
+                        {
+                            if(HasImpact(sel[0],sel[1]) || HasImpact(sel[1],sel[0]))
+                            {
+                                MessageBox.Show("One node has impact on other.", "Impact detected.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                            else
+                            {
+                                MessageBox.Show("These nodes not impacts themselves.", "No impact.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }));                       
+                    }
                     context.Items.Add(new ToolStripSeparator());
                 }
                 if (allContextItems.Values.Any(x => x > 0))
@@ -618,6 +633,62 @@ namespace NodeEditor
                         back.IsBackExecuted = true;
                         Execute(back);
                     }
+                }
+            }
+        }
+
+        public List<NodeVisual> GetNodes(params string[] nodeNames)
+        {
+            var nodes = graph.Nodes.Where(x => nodeNames.Contains(x.Name));
+            return nodes.ToList();
+        }
+
+        public bool HasImpact(NodeVisual startNode, NodeVisual endNode)
+        {
+            var connections = graph.Connections.Where(x => x.OutputNode == startNode && !x.IsExecution);
+            foreach (var connection in connections)
+            {
+                if(connection.InputNode == endNode)
+                {
+                    return true;
+                }
+                bool nextImpact = HasImpact(connection.InputNode, endNode);
+                if(nextImpact)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void ExecuteResolving(params string[] nodeNames)
+        {
+            var nodes = graph.Nodes.Where(x => nodeNames.Contains(x.Name));
+
+            foreach (var node in nodes)
+            {
+                ExecuteResolvingInternal(node);
+            }
+        }
+
+        private void ExecuteResolvingInternal(NodeVisual node)
+        {
+            var icontext = (node.GetNodeContext() as DynamicNodeContext);
+            foreach (var input in node.GetInputs())
+            {
+                var connection =
+                    graph.Connections.FirstOrDefault(x => x.InputNode == node && x.InputSocketName == input.Name);
+                if (connection != null)
+                {
+                    Resolve(connection.OutputNode);
+                    
+                    connection.OutputNode.Execute(Context);
+
+                    ExecuteResolvingInternal(connection.OutputNode);
+                    
+                    var ocontext = (connection.OutputNode.GetNodeContext() as DynamicNodeContext);
+                    icontext[connection.InputSocketName] = ocontext[connection.OutputSocketName];
                 }
             }
         }

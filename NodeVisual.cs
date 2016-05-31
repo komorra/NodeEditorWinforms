@@ -73,6 +73,11 @@ namespace NodeEditor
             Feedback = FeedbackType.Debug;
         }
 
+        public string GetGuid()
+        {
+            return GUID;
+        }
+
         internal SocketVisual[] GetSockets()
         {
             var socketList = new List<SocketVisual>();
