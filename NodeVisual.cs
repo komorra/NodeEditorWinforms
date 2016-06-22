@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Dynamic;
 using System.Linq;
@@ -62,6 +63,7 @@ namespace NodeEditor
         internal string GUID = Guid.NewGuid().ToString();
         internal Color NodeColor = Color.LightCyan;
         public bool IsBackExecuted { get; internal set; }
+        private SocketVisual[] socketCache;
 
         /// <summary>
         /// Tag for various puposes - may be used freely.
@@ -81,6 +83,11 @@ namespace NodeEditor
 
         internal SocketVisual[] GetSockets()
         {
+            if(socketCache!=null)
+            {
+                return socketCache;
+            }
+
             var socketList = new List<SocketVisual>();
             float curInputH = HeaderHeight + ComponentPadding;
             float curOutputH = HeaderHeight + ComponentPadding;
@@ -148,17 +155,22 @@ namespace NodeEditor
                 curOutputH += SocketVisual.SocketHeight + ComponentPadding;
             }
 
-            return socketList.ToArray();
+            socketCache = socketList.ToArray();
+            return socketCache;
+        }
+
+        internal void DiscardCache()
+        {
+            socketCache = null;
         }
 
         /// <summary>
         /// Returns node context which is dynamic type. It will contain all node default input/output properties.
         /// </summary>
         public object GetNodeContext()
-        {
+        {            
             if (nodeContext == null)
             {                
-
                 dynamic context = new DynamicNodeContext();
 
                 foreach (var input in GetInputs())
@@ -312,10 +324,11 @@ namespace NodeEditor
             {
                 dc[parameter] = parametersDict[parameter];
                 var o = outs.FirstOrDefault(x => x.Name == parameter);
-                if (o != null)
+                //if (o != null)
+                Debug.Assert(o != null, "Output not found");
                 {
                     o.Value = dc[parameter];
-                }                
+                }                                
             }
         }
 

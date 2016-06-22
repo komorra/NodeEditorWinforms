@@ -51,6 +51,8 @@ namespace NodeEditor
         private PointF dragConnectionBegin;
         private PointF dragConnectionEnd;
         private Stack<NodeVisual> executionStack = new Stack<NodeVisual>();
+        private bool rebuildConnectionDictionary = true;
+        private Dictionary<string, NodeConnection> connectionDictionary = new Dictionary<string, NodeConnection>();
 
         /// <summary>
         /// Context of the editor. You should set here an instance that implements INodesContext interface.
@@ -197,6 +199,7 @@ namespace NodeEditor
                 {
                     node.X += em.X - lastmpos.X;
                     node.Y += em.Y - lastmpos.Y;
+                    node.DiscardCache();
                     node.LayoutEditor();
                 }
                 if (graph.Nodes.Exists(x => x.IsSelected))
@@ -308,6 +311,7 @@ namespace NodeEditor
                                 }
 
                                 graph.Connections.Remove(connection);
+                                rebuildConnectionDictionary = true;
                             }
                             else
                             {
@@ -405,6 +409,7 @@ namespace NodeEditor
                                 x => x.InputNode == nc.InputNode && x.InputSocketName == nc.InputSocketName);
 
                             graph.Connections.Add(nc);
+                            rebuildConnectionDictionary = true;
                         }
                     }
                 }
@@ -613,44 +618,53 @@ namespace NodeEditor
         /// </summary>
         /// <param name="node"></param>
         public void Execute(NodeVisual node = null)
-        {
-            if (breakExecution)
-            {
-                breakExecution = false;
-                executionStack.Clear();
-                return;
-            }
+        {            
+            var nodeQueue = new Queue<NodeVisual>();
+            nodeQueue.Enqueue(node);
 
-            var init = node ?? graph.Nodes.FirstOrDefault(x => x.ExecInit);
-            if (init != null)
+            while (nodeQueue.Count > 0)
             {
-                init.Feedback = FeedbackType.Debug;
+                //Refresh();
+                if (breakExecution)
+                {
+                    breakExecution = false;
+                    executionStack.Clear();
+                    return;
+                }
 
-                Resolve(init);
-                init.Execute(Context);
-                var connection =
-                    graph.Connections.FirstOrDefault(
-                        x => x.OutputNode == init && x.IsExecution && x.OutputSocket.Value!= null && (x.OutputSocket.Value as ExecutionPath).IsSignaled);
-                if(connection == null)
+                var init = nodeQueue.Dequeue() ?? graph.Nodes.FirstOrDefault(x => x.ExecInit);
+                if (init != null)
                 {
-                    connection = graph.Connections.FirstOrDefault(x => x.OutputNode == init && x.IsExecution && x.OutputSocket.IsMainExecution);                   
-                }
-                else
-                {
-                    executionStack.Push(init);
-                }
-                if (connection != null)
-                {
-                    connection.InputNode.IsBackExecuted = false;
-                    Execute(connection.InputNode);
-                }
-                else
-                {
-                    if (executionStack.Count > 0)
+                    init.Feedback = FeedbackType.Debug;
+
+                    Resolve(init);
+                    init.Execute(Context);
+                    
+                    var connection =
+                        graph.Connections.FirstOrDefault(
+                            x => x.OutputNode == init && x.IsExecution && x.OutputSocket.Value != null && (x.OutputSocket.Value as ExecutionPath).IsSignaled);
+                    if (connection == null)
                     {
-                        var back = executionStack.Pop();
-                        back.IsBackExecuted = true;
-                        Execute(back);
+                        connection = graph.Connections.FirstOrDefault(x => x.OutputNode == init && x.IsExecution && x.OutputSocket.IsMainExecution);
+                    }
+                    else
+                    {
+                        executionStack.Push(init);
+                    }
+                    if (connection != null)
+                    {
+                        connection.InputNode.IsBackExecuted = false;
+                        //Execute(connection.InputNode);
+                        nodeQueue.Enqueue(connection.InputNode);
+                    }
+                    else
+                    {
+                        if (executionStack.Count > 0)
+                        {
+                            var back = executionStack.Pop();
+                            back.IsBackExecuted = true;
+                            Execute(back);
+                        }
                     }
                 }
             }
@@ -721,8 +735,8 @@ namespace NodeEditor
             var icontext = (node.GetNodeContext() as DynamicNodeContext);
             foreach (var input in node.GetInputs())
             {
-                var connection =
-                    graph.Connections.FirstOrDefault(x => x.InputNode == node && x.InputSocketName == input.Name);
+                var connection = GetConnection(node.GUID + input.Name);
+                    //graph.Connections.FirstOrDefault(x => x.InputNode == node && x.InputSocketName == input.Name);
                 if (connection != null)
                 {
                     Resolve(connection.OutputNode);
@@ -734,6 +748,25 @@ namespace NodeEditor
                     icontext[connection.InputSocketName] = ocontext[connection.OutputSocketName];                    
                 }
             }
+        }
+
+        private NodeConnection GetConnection(string v)
+        {
+            if(rebuildConnectionDictionary)
+            {
+                rebuildConnectionDictionary = false;
+                connectionDictionary.Clear();
+                foreach (var conn in graph.Connections)
+                {
+                    connectionDictionary.Add(conn.InputNode.GUID + conn.InputSocketName, conn);
+                }
+            }
+            NodeConnection nc = null;
+            if (connectionDictionary.TryGetValue(v, out nc))
+            {
+                return nc;
+            }
+            return null;
         }
 
         /// <summary>
@@ -803,6 +836,7 @@ namespace NodeEditor
             {
                 var ident = br.ReadString();
                 if (ident != "NodeSystemP") return;
+                rebuildConnectionDictionary = true;
                 graph.Connections.Clear();
                 graph.Nodes.Clear();
                 Controls.Clear();
@@ -828,6 +862,7 @@ namespace NodeEditor
                     br.ReadBytes(br.ReadInt32()); //read additional data
 
                     graph.Connections.Add(con);
+                    rebuildConnectionDictionary = true;
                 }
                 br.ReadBytes(br.ReadInt32()); //read additional data
             }
@@ -888,6 +923,7 @@ namespace NodeEditor
             graph.Connections.Clear();
             Controls.Clear();
             Refresh();
+            rebuildConnectionDictionary = true;
         }
     }
 }
