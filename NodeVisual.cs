@@ -69,7 +69,7 @@ namespace NodeEditor
         /// Tag for various puposes - may be used freely.
         /// </summary>
         public int Int32Tag = 0;
-
+        public string XmlExportName { get; internal set; }
 
         internal NodeVisual()
         {

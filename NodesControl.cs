@@ -26,6 +26,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace NodeEditor
 {
@@ -535,6 +536,8 @@ namespace NodeEditor
                         nv.Name = node.Attribute.Name;
                         nv.Order = graph.Nodes.Count;
                         nv.ExecInit = node.Attribute.IsExecutionInitiator;
+                        nv.XmlExportName = node.Attribute.XmlExportName;
+
                         if (node.Attribute.CustomEditor != null)
                         {
                             Control ctrl = null;
@@ -767,6 +770,52 @@ namespace NodeEditor
                 return nc;
             }
             return null;
+        }
+
+        public string ExportToXml()
+        {
+            var xml = new XmlDocument();
+
+            XmlElement el = (XmlElement)xml.AppendChild(xml.CreateElement("NodeGrap"));
+            el.SetAttribute("Created", DateTime.Now.ToString());
+            var nodes = el.AppendChild(xml.CreateElement("Nodes"));
+            foreach (var node in graph.Nodes)
+            {
+                var xmlNode = (XmlElement)nodes.AppendChild(xml.CreateElement("Node"));
+                xmlNode.SetAttribute("Name", node.XmlExportName);
+                xmlNode.SetAttribute("Id", node.GetGuid());
+                var xmlContext = (XmlElement)xmlNode.AppendChild(xml.CreateElement("Context"));
+                var context = node.GetNodeContext() as DynamicNodeContext;
+                foreach (var kv in context)
+                {
+                    var ce = (XmlElement)xmlContext.AppendChild(xml.CreateElement("ContextMember"));
+                    ce.SetAttribute("Name", kv);
+                    ce.SetAttribute("Value", Convert.ToString(context[kv] ?? ""));
+                    ce.SetAttribute("Type", context[kv] == null ? "" : context[kv].GetType().FullName);
+                }
+            }
+            var connections = el.AppendChild(xml.CreateElement("Connections"));
+            foreach (var conn in graph.Connections)
+            {
+                var xmlConn = (XmlElement)nodes.AppendChild(xml.CreateElement("Connection"));
+                xmlConn.SetAttribute("OutputNodeId", conn.OutputNode.GetGuid());
+                xmlConn.SetAttribute("OutputNodeSocket", conn.OutputSocketName);
+                xmlConn.SetAttribute("InputNodeId", conn.InputNode.GetGuid());
+                xmlConn.SetAttribute("InputNodeSocket", conn.InputSocketName);
+            }
+            StringBuilder sb = new StringBuilder();
+            XmlWriterSettings settings = new XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = "  ",
+                NewLineChars = "\r\n",
+                NewLineHandling = NewLineHandling.Replace
+            };
+            using (XmlWriter writer = XmlWriter.Create(sb, settings))
+            {
+                xml.Save(writer);
+            }
+            return sb.ToString();
         }
 
         /// <summary>

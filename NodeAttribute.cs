@@ -65,6 +65,11 @@ namespace NodeEditor
         public Type CustomEditor { get; set; }
 
         /// <summary>
+        /// Name that will be used in the xml export of the graph.
+        /// </summary>
+        public string XmlExportName { get; set; }
+
+        /// <summary>
         /// Attribute for exposing method as node.
         /// </summary>
         /// <param name="name">Name of the node that will be displayed in the node caption.</param>
@@ -74,8 +79,9 @@ namespace NodeEditor
         /// <param name="isCallable">If true, the node is able to be executed during execution process (will have exec input and output socket).</param>
         /// <param name="isExecutionInitiator">If true the node will be the start point of the execution.</param>
         /// <param name="customEditor">Given type should be subclass of System.Windows.Forms.Control, and represents what will be displayed in the middle of the node.</param>
+        /// <param name="xmlExportName">Name that will be used in the xml export of the graph.</param>
         public NodeAttribute(string name = "Node", string menu = "", string category = "General",
-            string description = "Some node.", bool isCallable = true, bool isExecutionInitiator = false, Type customEditor = null)
+            string description = "Some node.", bool isCallable = true, bool isExecutionInitiator = false, Type customEditor = null, string xmlExportName = "")
         {
             Name = name;
             Menu = menu;
@@ -84,6 +90,7 @@ namespace NodeEditor
             IsCallable = isCallable;
             IsExecutionInitiator = isExecutionInitiator;
             CustomEditor = customEditor;
+            XmlExportName = xmlExportName;
         }
 
         /// <summary>
