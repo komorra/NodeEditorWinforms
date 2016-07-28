@@ -6,6 +6,7 @@ Node Editor Winforms is a Windows Forms class library project, that provides nod
 ![Example of Node Editor usage in 3D application](http://i.imgur.com/GDJG8pf.png)
 
 ## Changelog
+* 2016.07.28 - Updated INodesContext implementation sample (missing event implementation)
 * 2016.06.22 - Changed various fragments of code to improve performance a little
 * 2016.03.27 - Fixed crash when the node method parameters was reordered. Added feature of sending feedback to the node graph from context.
 * 2016.03.21 - Added support for multiple execution path outputs per node, that implies ability to create more complex control flow nodes like loops, conditional nodes etc.
@@ -42,6 +43,9 @@ When you have NodesControl in your form or user control you should do first some
         // This is implementation of INodesContext.
         // CurrentProcessingNode is the node that is being actually executed.
         public NodeVisual CurrentProcessingNode { get; set; }
+        
+        // Implementation of interface member: event FeedbackInfo
+        public event Action<string, NodeVisual, FeedbackType, object, bool> FeedbackInfo;
         
         // Some your project specific methods, events, properties and so on
         public event Action<Model3D, Matrix> Placement = delegate { };
