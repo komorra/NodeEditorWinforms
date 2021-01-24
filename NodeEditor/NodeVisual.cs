@@ -59,7 +59,7 @@ namespace NodeEditor
         internal bool IsSelected { get; set; }
         internal FeedbackType Feedback { get; set; }
         private object nodeContext { get; set; } 
-        internal Control CustomEditor { get; set; }
+        public Control CustomEditor { get; internal set; }
         internal string GUID = Guid.NewGuid().ToString();
         internal Color NodeColor = Color.LightCyan;
         public bool IsBackExecuted { get; internal set; }
