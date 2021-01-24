@@ -6,6 +6,7 @@ Node Editor Winforms is a Windows Forms class library project, that provides nod
 ![Example of Node Editor usage in 3D application](http://i.imgur.com/GDJG8pf.png)
 
 ## Changelog
+* 2021.01.24 - Added ability to access nodes custom editors via CustomEditor property of NodeVisual
 * 2021.01.24 - Fixed method of resolving assemblies (which fixed for example usage of generic types in sockets, like List<T>)
 * 2021.01.24 - Added support for customizing node width and height - via Node attribute parameters 
 * 2016.08.03 - Added sample project (Math nodes sample) / Project refactoring
