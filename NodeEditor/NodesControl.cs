@@ -365,7 +365,7 @@ namespace NodeEditor
 
         private Assembly AssemblyResolver(AssemblyName assemblyName)
         {
-            return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName() == assemblyName);
+            return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.FullName == assemblyName.FullName);
         }
 
         private void NodesControl_MouseUp(object sender, MouseEventArgs e)
