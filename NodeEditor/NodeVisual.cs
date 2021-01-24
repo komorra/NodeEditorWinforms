@@ -71,6 +71,9 @@ namespace NodeEditor
         public int Int32Tag = 0;
         public string XmlExportName { get; internal set; }
 
+        internal int CustomWidth = -1;
+        internal int CustomHeight = -1;
+
         internal NodeVisual()
         {
             Feedback = FeedbackType.Debug;
@@ -241,7 +244,18 @@ namespace NodeEditor
             var h = HeaderHeight + Math.Max(inputs*(SocketVisual.SocketHeight + ComponentPadding),
                 outputs*(SocketVisual.SocketHeight + ComponentPadding)) + ComponentPadding*2f;
 
-            return new SizeF(Math.Max(csize.Width, NodeWidth), Math.Max(csize.Height, h));
+            csize.Width = Math.Max(csize.Width, NodeWidth);
+            csize.Height = Math.Max(csize.Height, h);
+            if(CustomWidth >= 0)
+            {
+                csize.Width = CustomWidth;
+            }
+            if(CustomHeight >= 0)
+            {
+                csize.Height = CustomHeight;
+            }
+
+            return new SizeF(csize.Width, csize.Height);
         }
 
         /// <summary>

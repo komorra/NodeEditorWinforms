@@ -30,6 +30,11 @@ namespace NodeEditor
     public class NodeAttribute : Attribute
     {
         /// <summary>
+        /// Const used for width and height if they are not defined by user
+        /// </summary>
+        private const int Auto = -1;
+
+        /// <summary>
         /// Where should be node menuitem located - don't set if it should be in the main menu level.
         /// </summary>
         public string Menu { get; set; }
@@ -70,6 +75,16 @@ namespace NodeEditor
         public string XmlExportName { get; set; }
 
         /// <summary>
+        /// Width of single node
+        /// </summary>
+        public int Width { get; set; }
+
+        /// <summary>
+        /// Height of single node
+        /// </summary>
+        public int Height { get; set; }
+
+        /// <summary>
         /// Attribute for exposing method as node.
         /// </summary>
         /// <param name="name">Name of the node that will be displayed in the node caption.</param>
@@ -80,8 +95,11 @@ namespace NodeEditor
         /// <param name="isExecutionInitiator">If true the node will be the start point of the execution.</param>
         /// <param name="customEditor">Given type should be subclass of System.Windows.Forms.Control, and represents what will be displayed in the middle of the node.</param>
         /// <param name="xmlExportName">Name that will be used in the xml export of the graph.</param>
+        /// <param name="width">Width of single node, or Auto if not determined</param>
+        /// <param name="height">Height of single node, or Auto if not determined</param>
         public NodeAttribute(string name = "Node", string menu = "", string category = "General",
-            string description = "Some node.", bool isCallable = true, bool isExecutionInitiator = false, Type customEditor = null, string xmlExportName = "")
+            string description = "Some node.", bool isCallable = true, bool isExecutionInitiator = false, Type customEditor = null, string xmlExportName = "",
+            int width = Auto, int height = Auto)
         {
             Name = name;
             Menu = menu;
@@ -91,6 +109,8 @@ namespace NodeEditor
             IsExecutionInitiator = isExecutionInitiator;
             CustomEditor = customEditor;
             XmlExportName = xmlExportName;
+            Width = width;
+            Height = height;
         }
 
         /// <summary>

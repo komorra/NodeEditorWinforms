@@ -537,6 +537,8 @@ namespace NodeEditor
                         nv.Order = graph.Nodes.Count;
                         nv.ExecInit = node.Attribute.IsExecutionInitiator;
                         nv.XmlExportName = node.Attribute.XmlExportName;
+                        nv.CustomWidth = node.Attribute.Width;
+                        nv.CustomHeight = node.Attribute.Height;
 
                         if (node.Attribute.CustomEditor != null)
                         {
@@ -931,8 +933,15 @@ namespace NodeEditor
             var customEditorAssembly = br.ReadString();
             var customEditor = br.ReadString();
             nv.Type = Context.GetType().GetMethod(br.ReadString());
+            var attribute = nv.Type.GetCustomAttributes(typeof(NodeAttribute), false)
+                                        .Cast<NodeAttribute>()
+                                        .FirstOrDefault();
+            if(attribute!=null)
+            {
+                nv.CustomWidth = attribute.Width;
+                nv.CustomHeight = attribute.Height;
+            }
             (nv.GetNodeContext() as DynamicNodeContext).Deserialize(br.ReadBytes(br.ReadInt32()));
-
             var additional = br.ReadInt32(); //read additional data
             if (additional >= 4)
             {
