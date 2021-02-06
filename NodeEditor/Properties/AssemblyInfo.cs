@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Mariusz Komorowski")]
 [assembly: AssemblyProduct("NodeEditor")]
-[assembly: AssemblyCopyright("Copyright ©  2016 Mariusz Komorowski")]
+[assembly: AssemblyCopyright("Copyright ©  2021 Mariusz Komorowski")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
