@@ -171,40 +171,52 @@ namespace NodeEditor
         /// Returns node context which is dynamic type. It will contain all node default input/output properties.
         /// </summary>
         public object GetNodeContext()
-        {            
+        {
+            const string stringTypeName = "System.String";
+
             if (nodeContext == null)
             {                
                 dynamic context = new DynamicNodeContext();
 
                 foreach (var input in GetInputs())
                 {
-                    var p = input.ParameterType == typeof(string) ? "" :
-                        Activator.CreateInstance(AppDomain.CurrentDomain, input.ParameterType.Assembly.GetName().Name,
-                            input.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
-                    if (!Convert.IsDBNull(input.DefaultValue))
+                    var contextName = input.Name.Replace(" ", "");
+                    if (input.ParameterType.FullName.Replace("&", "") == stringTypeName)
                     {
-                        var def = Convert.ChangeType(input.DefaultValue, p.GetType());
-                        if (def != null)
+                        context[contextName] = string.Empty;
+                    }
+                    else
+                    {
+                        try
                         {
-                            p = def;
+                            context[contextName] = Activator.CreateInstance(AppDomain.CurrentDomain, input.ParameterType.Assembly.GetName().Name,
+                            input.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
+                        }
+                        catch (MissingMethodException ex) //For case when type does not have default constructor
+                        {
+                            context[contextName] = null;
                         }
                     }
-                    context[input.Name.Replace(" ", "")] = p;
                 }
                 foreach (var output in GetOutputs())
                 {
-                    var p = output.ParameterType == typeof(string) ? "" :
-                       Activator.CreateInstance(AppDomain.CurrentDomain, output.ParameterType.Assembly.GetName().Name,
-                            output.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
-                    if (!Convert.IsDBNull(output.DefaultValue))
+                    var contextName = output.Name.Replace(" ", "");
+                    if (output.ParameterType.FullName.Replace("&", "") == stringTypeName)
                     {
-                        var def = Convert.ChangeType(output.DefaultValue, p.GetType());
-                        if (def != null)
+                        context[contextName] = string.Empty;
+                    }
+                    else
+                    {
+                        try
                         {
-                            p = def;
+                            context[contextName] = Activator.CreateInstance(AppDomain.CurrentDomain, output.ParameterType.Assembly.GetName().Name,
+                            output.ParameterType.FullName.Replace("&", "").Replace(" ", "")).Unwrap();
+                        }
+                        catch(MissingMethodException ex) //For case when type does not have default constructor
+                        {
+                            context[contextName] = null;
                         }
                     }
-                    context[output.Name.Replace(" ", "")] = p;
                 }
 
                 nodeContext = context;
