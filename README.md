@@ -1,3 +1,5 @@
+[![GitHub](https://img.shields.io/github/license/komorra/NodeEditorWinforms)](https://github.com/komorra/NodeEditorWinforms/blob/master/License.md) [![Nuget](https://img.shields.io/nuget/v/NodeEditor)](https://www.nuget.org/packages/NodeEditor/)
+
 ![](logo.png)
 
 Node Editor Winforms
