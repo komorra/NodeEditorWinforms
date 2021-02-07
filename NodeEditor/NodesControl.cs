@@ -34,7 +34,7 @@ namespace NodeEditor
     /// Main control of Node Editor Winforms
     /// </summary>
     [ToolboxBitmap(typeof(NodesControl), "nodeed")]
-    public partial class NodesControl : UserControl
+    public partial class NodesControl : UserControl, IZoomable
     {
         internal class NodeToken
         {
@@ -75,6 +75,27 @@ namespace NodeEditor
                 }
             }
         }
+
+
+        private float zoom = 1f;
+
+        /// <summary>
+        /// Indicates scale factor of visual appearance of node graph
+        /// </summary>
+        public float Zoom
+        {
+            get { return zoom; }
+            set 
+            { 
+                zoom = value;
+                Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// If true, drawing events will use fast painting modes instead of high quality ones
+        /// </summary>
+        public bool PreferFastRendering { get; set; }
 
         /// <summary>
         /// Occurs when user selects a node. In the object will be passed node settings for unplugged inputs/outputs.
@@ -157,15 +178,16 @@ namespace NodeEditor
 
         private void NodesControl_Paint(object sender, PaintEventArgs e)
         {
-            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;            
+            e.Graphics.SmoothingMode = PreferFastRendering ? SmoothingMode.HighSpeed : SmoothingMode.HighQuality;
+            e.Graphics.InterpolationMode = PreferFastRendering ? InterpolationMode.Low : InterpolationMode.HighQualityBilinear;
+            e.Graphics.ScaleTransform(zoom, zoom);
 
-            graph.Draw(e.Graphics, PointToClient(MousePosition), MouseButtons);            
+            graph.Draw(e.Graphics, PointToClient(MousePosition), MouseButtons, PreferFastRendering);            
 
             if (dragSocket != null)
             {
                 var pen = new Pen(Color.Black, 2);
-                NodesGraph.DrawConnection(e.Graphics, pen, dragConnectionBegin, dragConnectionEnd);
+                NodesGraph.DrawConnection(e.Graphics, pen, dragConnectionBegin, dragConnectionEnd, PreferFastRendering);
             }
 
             if (selectionStart != PointF.Empty)
@@ -189,10 +211,11 @@ namespace NodeEditor
 
         private void NodesControl_MouseMove(object sender, MouseEventArgs e)
         {
-            var em = PointToScreen(e.Location);
+            var loc = GetLocationWithZoom(e.Location);
+            var em = PointToScreen(loc);
             if (selectionStart != PointF.Empty)
             {
-                selectionEnd = e.Location;
+                selectionEnd = loc;
             }
             if (mdown)
             {                                            
@@ -241,7 +264,9 @@ namespace NodeEditor
         }
 
         private void NodesControl_MouseDown(object sender, MouseEventArgs e)
-        {                        
+        {
+            var loc = GetLocationWithZoom(e.Location);
+
             if (e.Button == MouseButtons.Left)
             {
                 selectionStart  = PointF.Empty;                
@@ -255,7 +280,7 @@ namespace NodeEditor
 
                 var node =
                     graph.Nodes.OrderBy(x => x.Order).FirstOrDefault(
-                        x => new RectangleF(new PointF(x.X, x.Y), x.GetHeaderSize()).Contains(e.Location));
+                        x => new RectangleF(new PointF(x.X, x.Y), x.GetHeaderSize()).Contains(loc));
 
                 if (node != null && !mdown)
                 {
@@ -268,7 +293,7 @@ namespace NodeEditor
                         node.CustomEditor.BringToFront();
                     }
                     mdown = true;
-                    lastmpos = PointToScreen(e.Location);
+                    lastmpos = PointToScreen(loc);
 
                     Refresh();
                 }
@@ -276,11 +301,11 @@ namespace NodeEditor
                 {
                     var nodeWhole =
                     graph.Nodes.OrderBy(x => x.Order).FirstOrDefault(
-                        x => new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds()).Contains(e.Location));
+                        x => new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds()).Contains(loc));
                     if (nodeWhole != null)
                     {
                         node = nodeWhole;
-                        var socket = nodeWhole.GetSockets().FirstOrDefault(x => x.GetBounds().Contains(e.Location));
+                        var socket = nodeWhole.GetSockets().FirstOrDefault(x => x.GetBounds().Contains(loc));
                         if (socket != null)
                         {
                             if ((ModifierKeys & Keys.Control) == Keys.Control)
@@ -319,15 +344,15 @@ namespace NodeEditor
                                 dragSocket = socket;
                                 dragSocketNode = nodeWhole;
                             }
-                            dragConnectionBegin = e.Location;
-                            dragConnectionEnd = e.Location;
+                            dragConnectionBegin = loc;
+                            dragConnectionEnd = loc;
                             mdown = true;
-                            lastmpos = PointToScreen(e.Location);
+                            lastmpos = PointToScreen(loc);
                         }
                     }
                     else
                     {
-                        selectionStart = selectionEnd = e.Location;
+                        selectionStart = selectionEnd = loc;
                     }
                 }
                 if (node != null)
@@ -370,6 +395,8 @@ namespace NodeEditor
 
         private void NodesControl_MouseUp(object sender, MouseEventArgs e)
         {
+            var loc = GetLocationWithZoom(e.Location);
+
             if (selectionStart != PointF.Empty)
             {
                 var rect = MakeRect(selectionStart, selectionEnd);
@@ -382,10 +409,10 @@ namespace NodeEditor
             {
                 var nodeWhole =
                     graph.Nodes.OrderBy(x => x.Order).FirstOrDefault(
-                        x => new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds()).Contains(e.Location));
+                        x => new RectangleF(new PointF(x.X, x.Y), x.GetNodeBounds()).Contains(loc));
                 if (nodeWhole != null)
                 {
-                    var socket = nodeWhole.GetSockets().FirstOrDefault(x => x.GetBounds().Contains(e.Location));
+                    var socket = nodeWhole.GetSockets().FirstOrDefault(x => x.GetBounds().Contains(loc));
                     if (socket != null)
                     {
                         if (IsConnectable(dragSocket,socket) && dragSocket.Input != socket.Input)
@@ -461,7 +488,8 @@ namespace NodeEditor
 
         private void NodesControl_MouseClick(object sender, MouseEventArgs e)
         {
-            lastMouseLocation = e.Location;
+            var loc = GetLocationWithZoom(e.Location);
+            lastMouseLocation = loc;
 
             if (Context == null) return;
 
@@ -559,6 +587,14 @@ namespace NodeEditor
                 }
                 context.Show(MousePosition);
             }
+        }
+
+        private Point GetLocationWithZoom(Point location)
+        {
+            var zx = location.X / zoom;
+            var zy = location.Y / zoom;
+            var zl = new Point((int)zx, (int)zy);
+            return zl;
         }
 
         private void ChangeSelectedNodesColor()

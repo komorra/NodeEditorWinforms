@@ -279,3 +279,5 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+NodeEditor/NodeEditor.nuspec
+NodeEditor/nuget.exe
