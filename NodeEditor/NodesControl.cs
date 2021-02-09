@@ -93,6 +93,15 @@ namespace NodeEditor
             }
         }
 
+        private DrawInfo customDrawInfo = new DrawInfo();
+
+        public DrawInfo CustomDrawInfo
+        {
+            get { return customDrawInfo; }
+            set { customDrawInfo = value; }
+        }
+
+
         /// <summary>
         /// If true, drawing events will use fast painting modes instead of high quality ones
         /// </summary>
@@ -190,11 +199,11 @@ namespace NodeEditor
 
             OnPaintNodesBackground(sender, e);
 
-            graph.Draw(e.Graphics, GetLocationWithZoom(PointToClient(MousePosition)), MouseButtons, PreferFastRendering);            
+            graph.Draw(e.Graphics, GetLocationWithZoom(PointToClient(MousePosition)), MouseButtons, PreferFastRendering, customDrawInfo);            
 
             if (dragSocket != null)
             {
-                var pen = new Pen(Color.Black, 2);
+                var pen = customDrawInfo.GetConnectionStyle(dragSocket.Type, true);
                 NodesGraph.DrawConnection(e.Graphics, pen, dragConnectionBegin, dragConnectionEnd, PreferFastRendering);
             }
 

@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DrawInfo.cs" />
     <Compile Include="DynamicNodeContext.cs" />
     <Compile Include="DynamicNodeContextConverter.cs" />
     <Compile Include="ExecutionPath.cs" />
