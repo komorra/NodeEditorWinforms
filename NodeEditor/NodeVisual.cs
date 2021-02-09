@@ -242,8 +242,11 @@ namespace NodeEditor
             var csize = new SizeF();
             if (CustomEditor != null)
             {
-                csize = new SizeF(CustomEditor.ClientSize.Width + 2 + 80 +SocketVisual.SocketHeight*2,
-                    CustomEditor.ClientSize.Height + HeaderHeight + 8);                
+                var zoomable = CustomEditor as IZoomable;
+                float zoom = zoomable == null ? 1f : (float)Math.Sqrt(zoomable.Zoom);
+
+                csize = new SizeF(CustomEditor.ClientSize.Width/zoom + 2 + 80 +SocketVisual.SocketHeight*2,
+                    CustomEditor.ClientSize.Height/zoom + HeaderHeight + 8);                
             }
 
             var inputs = GetInputs().Length;
@@ -358,11 +361,11 @@ namespace NodeEditor
             }
         }
 
-        internal void LayoutEditor()
+        internal void LayoutEditor(float zoom)
         {
             if (CustomEditor != null)
             {
-                CustomEditor.Location = new Point((int)( X + 1 + 40 + SocketVisual.SocketHeight), (int) (Y + HeaderHeight + 4));
+                CustomEditor.Location = new Point((int)(zoom * (X + 1 + 40 + SocketVisual.SocketHeight)), (int)(zoom * (Y + HeaderHeight + 4)));
             }
         }
     }

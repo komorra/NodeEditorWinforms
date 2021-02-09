@@ -88,6 +88,7 @@ namespace NodeEditor
             set 
             { 
                 zoom = value;
+                PassZoomToNodes();
                 Invalidate();
             }
         }
@@ -182,7 +183,7 @@ namespace NodeEditor
             e.Graphics.InterpolationMode = PreferFastRendering ? InterpolationMode.Low : InterpolationMode.HighQualityBilinear;
             e.Graphics.ScaleTransform(zoom, zoom);
 
-            graph.Draw(e.Graphics, PointToClient(MousePosition), MouseButtons, PreferFastRendering);            
+            graph.Draw(e.Graphics, GetLocationWithZoom(PointToClient(MousePosition)), MouseButtons, PreferFastRendering);            
 
             if (dragSocket != null)
             {
@@ -213,6 +214,7 @@ namespace NodeEditor
         {
             var loc = GetLocationWithZoom(e.Location);
             var em = PointToScreen(loc);
+            
             if (selectionStart != PointF.Empty)
             {
                 selectionEnd = loc;
@@ -224,7 +226,7 @@ namespace NodeEditor
                     node.X += em.X - lastmpos.X;
                     node.Y += em.Y - lastmpos.Y;
                     node.DiscardCache();
-                    node.LayoutEditor();
+                    node.LayoutEditor(zoom);
                 }
                 if (graph.Nodes.Exists(x => x.IsSelected))
                 {
@@ -291,6 +293,7 @@ namespace NodeEditor
                     if (node.CustomEditor != null)
                     {
                         node.CustomEditor.BringToFront();
+                        PassZoomToNodeCustomEditor(node.CustomEditor);
                     }
                     mdown = true;
                     lastmpos = PointToScreen(loc);
@@ -362,6 +365,15 @@ namespace NodeEditor
             }
 
             needRepaint = true;
+        }
+
+        private void PassZoomToNodeCustomEditor(Control control)
+        {
+            var zoomable = control as IZoomable;
+            if (zoomable != null)
+            {
+                zoomable.Zoom = zoom * zoom;
+            }
         }
 
         private bool IsConnectable(SocketVisual a, SocketVisual b)
@@ -575,9 +587,10 @@ namespace NodeEditor
                             if (ctrl != null)
                             {
                                 ctrl.Tag = nv;                                
-                                Controls.Add(ctrl);                                                               
+                                Controls.Add(ctrl);
+                                PassZoomToNodeCustomEditor(ctrl);
                             }
-                            nv.LayoutEditor();
+                            nv.LayoutEditor(zoom);
                         }
 
                         graph.Nodes.Add(nv);
@@ -595,6 +608,19 @@ namespace NodeEditor
             var zy = location.Y / zoom;
             var zl = new Point((int)zx, (int)zy);
             return zl;
+        }
+
+        private void PassZoomToNodes()
+        {
+            foreach(var node in graph.Nodes)
+            {
+                if(node.CustomEditor != null)
+                {
+                    PassZoomToNodeCustomEditor(node.CustomEditor);
+                    node.DiscardCache();
+                    node.LayoutEditor(zoom);
+                }
+            }
         }
 
         private void ChangeSelectedNodesColor()
@@ -634,7 +660,11 @@ namespace NodeEditor
             }
             graph.Nodes.ForEach(x => x.IsSelected = false);
             cloned.ForEach(x => x.IsSelected = true);
-            cloned.Where(x => x.CustomEditor != null).ToList().ForEach(x => x.CustomEditor.BringToFront());
+            cloned.Where(x => x.CustomEditor != null).ToList().ForEach(x =>
+            {
+                x.CustomEditor.BringToFront();
+                PassZoomToNodeCustomEditor(x.CustomEditor);
+            });
             graph.Nodes.AddRange(cloned);
             Invalidate();
         }
@@ -1002,8 +1032,9 @@ namespace NodeEditor
                 {
                     ctrl.Tag = nv;
                     Controls.Add(ctrl);
+                    PassZoomToNodeCustomEditor(ctrl);
                 }
-                nv.LayoutEditor();
+                nv.LayoutEditor(zoom);
             }
             return nv;
         }
