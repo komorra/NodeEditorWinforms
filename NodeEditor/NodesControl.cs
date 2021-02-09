@@ -114,6 +114,11 @@ namespace NodeEditor
         /// </summary>
         public event Action<RectangleF> OnShowLocation = delegate { };
 
+        /// <summary>
+        /// Use this event to paint custom background - scaling is already applied into Graphics context.
+        /// </summary>
+        public event EventHandler<PaintEventArgs> OnPaintNodesBackground = delegate { };
+
         private readonly Dictionary<ToolStripMenuItem,int> allContextItems = new Dictionary<ToolStripMenuItem, int>();
 
         private Point lastMouseLocation;
@@ -182,6 +187,8 @@ namespace NodeEditor
             e.Graphics.SmoothingMode = PreferFastRendering ? SmoothingMode.HighSpeed : SmoothingMode.HighQuality;
             e.Graphics.InterpolationMode = PreferFastRendering ? InterpolationMode.Low : InterpolationMode.HighQualityBilinear;
             e.Graphics.ScaleTransform(zoom, zoom);
+
+            OnPaintNodesBackground(sender, e);
 
             graph.Draw(e.Graphics, GetLocationWithZoom(PointToClient(MousePosition)), MouseButtons, PreferFastRendering);            
 
